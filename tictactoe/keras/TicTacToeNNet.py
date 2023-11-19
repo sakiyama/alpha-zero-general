@@ -18,7 +18,7 @@ Based on the OthelloNNet by SourKream and Surag Nair.
 class TicTacToeNNet():
     def __init__(self, game, args):
         # game params
-        self.board_x, self.board_y = game.getBoardSize()
+        self.board_x, self.board_y = game.boardSize()
         self.action_size = game.getActionSize()
         self.args = args
 

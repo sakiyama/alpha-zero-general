@@ -23,7 +23,7 @@ class TicTacToeGame(Game):
         b = Board(self.n)
         return np.array(b.pieces)
 
-    def getBoardSize(self):
+    def boardSize(self):
         # (a,b) tuple
         return (self.n, self.n)
 

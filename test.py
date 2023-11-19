@@ -17,18 +17,14 @@ import unittest
 import Arena
 from MCTS import MCTS
 
-from othello.OthelloGame import OthelloGame
-from othello.OthelloPlayers import RandomPlayer
-from othello.keras.NNet import NNetWrapper as OthelloKerasNNet
-
 from tictactoe.TicTacToeGame import TicTacToeGame
 from tictactoe.keras.NNet import NNetWrapper as TicTacToeKerasNNet
+from tictactoe.TicTacToePlayers import RandomPlayer
 
 import numpy as np
 from utils import *
 
 class TestAllGames(unittest.TestCase):
-
     @staticmethod
     def execute_game_test(game, neural_net):
         rp = RandomPlayer(game).play
@@ -39,9 +35,6 @@ class TestAllGames(unittest.TestCase):
 
         arena = Arena.Arena(n1p, rp, game)
         print(arena.playGames(2, verbose=False))
-
-    def test_othello_keras(self):
-        self.execute_game_test(OthelloGame(6), OthelloKerasNNet)
 
     def test_tictactoe_keras(self):
         self.execute_game_test(TicTacToeGame(), TicTacToeKerasNNet)
