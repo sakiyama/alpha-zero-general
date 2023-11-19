@@ -67,7 +67,7 @@ class TicTacToeGame(Game):
             return -1
         if b.has_legal_moves():
             return 0
-        # draw has a very little value 
+        # draw has a very little value
         return 1e-4
 
     def getCanonicalForm(self, board, player):
@@ -92,7 +92,7 @@ class TicTacToeGame(Game):
 
     def stringRepresentation(self, board):
         # 8x8 numpy array (canonical board)
-        return board.tostring()
+        return board.tobytes()
 
     @staticmethod
     def display(board):
