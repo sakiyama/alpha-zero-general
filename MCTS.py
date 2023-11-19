@@ -37,7 +37,7 @@ class MCTS():
         for i in range(self.config.simulations):
             self.search(canonicalBoard)
 
-        s = self.game.stringRepresentation(canonicalBoard)
+        s = self.game.string(canonicalBoard)
         counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.actionSize())]
 
         if temp == 0:
@@ -72,7 +72,7 @@ class MCTS():
             v: the negative of the value of the current canonicalBoard
         """
 
-        s = self.game.stringRepresentation(canonicalBoard)
+        s = self.game.string(canonicalBoard)
 
         if s not in self.Es:
             self.Es[s] = self.game.done(canonicalBoard, 1)

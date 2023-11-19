@@ -1,10 +1,9 @@
 from __future__ import print_function
 import sys
 sys.path.append('..')
-from Game import Game
 from .TicTacToeLogic import Board
 import numpy as np
-class TicTacToeGame(Game):
+class TicTacToeGame:
     def __init__(self, n=3):
         self.n = n
 
@@ -37,7 +36,7 @@ class TicTacToeGame(Game):
         valids = [0]*self.actionSize()
         b = Board(self.n)
         b.pieces = np.copy(board)
-        legalMoves =  b.get_legal_moves(player)
+        legalMoves =  b.moves(player)
         if len(legalMoves)==0:
             valids[-1]=1
             return np.array(valids)
@@ -80,7 +79,7 @@ class TicTacToeGame(Game):
                 l += [(newB, list(newPi.ravel()) + [pi[-1]])]
         return l
 
-    def stringRepresentation(self, board):
+    def string(self, board):
         # 8x8 numpy array (canonical board)
         return board.tobytes()
 
