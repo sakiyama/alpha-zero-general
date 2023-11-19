@@ -14,17 +14,18 @@ config = dotdict({
     'cpuct': 1,
 
     'checkpoint': './temp/',
-    'load_model': False,
     'load_folder_file': ('/dev/models/8x100x50','best.pth.tar'),
     'maxHistory': 20,
 })
 
+load_model = False
+
 if __name__ == "__main__":
     g = Game()
     network = Network(g)
-    if config.load_model:
+    if load_model:
         network.load(config.load_folder_file[0], config.load_folder_file[1])
     c = Coach(g, network, config)
-    if config.load_model:
+    if load_model:
         c.loadExamples()
     c.learn()

@@ -81,9 +81,9 @@ class TicTacToeGame:
             print ("-", end="-")
         print("--")
         for y in range(n):
-            print(y, "|",end="")    # print the row #
+            print(y, "|",end="")
             for x in range(n):
-                piece = board[y][x]    # get the piece to print
+                piece = board[y][x]
                 if piece == -1: print("X ",end="")
                 elif piece == 1: print("O ",end="")
                 else:

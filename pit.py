@@ -13,22 +13,16 @@ use this script to play any two agents against each other, or play manually with
 any agent.
 """
 
-mini_othello = False  # Play in 6x6 instead of the normal 8x8.
+mini_othello = False
 human_vs_cpu = True
 
 if mini_othello:
     g = OthelloGame(6)
 else:
     g = OthelloGame(8)
-
-# all players
 rp = RandomPlayer(g).play
 gp = GreedyOthelloPlayer(g).play
 hp = HumanOthelloPlayer(g).play
-
-
-
-# network players
 n1 = Network(g)
 if mini_othello:
     n1.load('./pretrained_models/othello/pytorch/','6x100x25_best.pth.tar')
