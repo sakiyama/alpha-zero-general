@@ -27,14 +27,14 @@ class MCTS():
 
     def getActionProb(self, canonicalBoard, temp=1):
         """
-        This function performs numMCTSSims simulations of MCTS starting from
+        This function performs simulations simulations of MCTS starting from
         canonicalBoard.
 
         Returns:
             probs: a policy vector where the probability of the ith action is
                    proportional to Nsa[(s,a)]**(1./temp)
         """
-        for i in range(self.args.numMCTSSims):
+        for i in range(self.args.simulations):
             self.search(canonicalBoard)
 
         s = self.game.stringRepresentation(canonicalBoard)

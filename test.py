@@ -29,7 +29,7 @@ class TestAllGames(unittest.TestCase):
     def execute_game_test(game, neural_net):
         rp = RandomPlayer(game).play
 
-        args = dotdict({'numMCTSSims': 25, 'cpuct': 1.0})
+        args = dotdict({'simulations': 25, 'cpuct': 1.0})
         mcts = MCTS(game, neural_net(game), args)
         n1p = lambda x: np.argmax(mcts.getActionProb(x, temp=0))
 

@@ -70,11 +70,11 @@ class Coach():
 
     def learn(self):
         """
-        Performs numIters iterations with numEps episodes of self-play in each
+        Performs numIters iterations with episodes episodes of self-play in each
         iteration. After every iteration, it retrains neural network with
         examples in trainExamples (which has a maximum length of maxlenofQueue).
         It then pits the new neural network against the old one and accepts it
-        only if it wins >= updateThreshold fraction of games.
+        only if it wins >= winRate fraction of games.
         """
 
         for i in range(1, self.args.numIters + 1):
@@ -84,7 +84,7 @@ class Coach():
             if not self.skipFirstSelfPlay or i > 1:
                 iterationTrainExamples = deque([], maxlen=self.args.maxlenOfQueue)
 
-                for _ in tqdm(range(self.args.numEps), desc="Self Play"):
+                for _ in tqdm(range(self.args.episodes), desc="Self Play"):
                     self.mcts = MCTS(self.game, self.nnet, self.args)  # reset search tree
                     iterationTrainExamples += self.executeEpisode()
 
@@ -119,7 +119,7 @@ class Coach():
             pwins, nwins, draws = arena.playGames(self.args.arenaCompare)
 
             log.info('NEW/PREV WINS : %d / %d ; DRAWS : %d' % (nwins, pwins, draws))
-            if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.updateThreshold:
+            if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.args.winRate:
                 log.info('REJECTING NEW MODEL')
                 self.nnet.load_checkpoint(folder=self.args.checkpoint, filename='temp.pth.tar')
             else:
