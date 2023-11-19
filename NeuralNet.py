@@ -31,19 +31,19 @@ class NeuralNet():
 
         Returns:
             pi: a policy vector for the current board- a numpy array of length
-                game.getActionSize
+                game.actionSize
             v: a float in [-1,1] that gives the value of the current board
         """
         pass
 
-    def save_checkpoint(self, folder, filename):
+    def save(self, folder, filename):
         """
         Saves the current neural network (with its parameters) in
         folder/filename
         """
         pass
 
-    def load_checkpoint(self, folder, filename):
+    def load(self, folder, filename):
         """
         Loads parameters of the neural network from folder/filename
         """
