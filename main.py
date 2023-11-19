@@ -1,15 +1,7 @@
-import logging
-
-import coloredlogs
-
 from Coach import Coach
 from tictactoe.TicTacToeGame import TicTacToeGame as Game
-from tictactoe.keras.NNet import NNetWrapper as nn
+from tictactoe.network import Network
 from utils import *
-
-log = logging.getLogger(__name__)
-
-coloredlogs.install(level='INFO')  # INFO DEBUG
 
 config = dotdict({
     'numIters': 1000,
@@ -29,17 +21,10 @@ config = dotdict({
 
 if __name__ == "__main__":
     g = Game()
-    network = nn(g)
+    network = Network(g)
     if config.load_model:
-        log.info('Loading checkpoint "%s/%s"...', config.load_folder_file[0], config.load_folder_file[1])
         network.load(config.load_folder_file[0], config.load_folder_file[1])
-
-    log.info('Loading the Coach...')
     c = Coach(g, network, config)
-
     if config.load_model:
-        log.info("Loading 'examples' from file...")
         c.loadExamples()
-
-    log.info('Starting the learning process 🎉')
     c.learn()

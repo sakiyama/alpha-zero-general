@@ -1,6 +1,3 @@
-from __future__ import print_function
-import sys
-sys.path.append('..')
 from .TicTacToeLogic import Board
 import numpy as np
 class TicTacToeGame:
@@ -8,21 +5,16 @@ class TicTacToeGame:
         self.n = n
 
     def board(self):
-        # return initial board (numpy board)
         b = Board(self.n)
         return np.array(b.pieces)
 
     def boardSize(self):
-        # (a,b) tuple
         return (self.n, self.n)
 
     def actionSize(self):
-        # return number of actions
         return self.n*self.n + 1
 
     def next(self, board, player, action):
-        # if player takes action on board, return next (board,player)
-        # action must be a valid move
         if action == self.n*self.n:
             return (board, -player)
         b = Board(self.n)
@@ -32,7 +24,6 @@ class TicTacToeGame:
         return (b.pieces, -player)
 
     def moves(self, board, player):
-        # return a fixed size binary vector
         valids = [0]*self.actionSize()
         b = Board(self.n)
         b.pieces = np.copy(board)
@@ -45,8 +36,6 @@ class TicTacToeGame:
         return np.array(valids)
 
     def done(self, board, player):
-        # return 0 if not ended, 1 if player 1 won, -1 if player 1 lost
-        # player = 1
         b = Board(self.n)
         b.pieces = np.copy(board)
 
@@ -56,15 +45,12 @@ class TicTacToeGame:
             return -1
         if b.has_legal_moves():
             return 0
-        # draw has a very little value
         return 1e-4
 
     def getCanonicalForm(self, board, player):
-        # return state if player==1, else return -state if player==-1
         return player*board
 
     def symmetries(self, board, pi):
-        # mirror, rotational
         assert(len(pi) == self.n**2+1)  # 1 for pass
         pi_board = np.reshape(pi[:-1], (self.n, self.n))
         l = []
@@ -80,7 +66,6 @@ class TicTacToeGame:
         return l
 
     def string(self, board):
-        # 8x8 numpy array (canonical board)
         return board.tobytes()
 
     @staticmethod

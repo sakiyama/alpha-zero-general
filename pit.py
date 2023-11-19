@@ -2,7 +2,7 @@ import Arena
 from MCTS import MCTS
 from othello.OthelloGame import OthelloGame
 from othello.OthelloPlayers import *
-from othello.pytorch.NNet import NNetWrapper as NNet
+from othello.pytorch.NNet import Network
 
 
 import numpy as np
@@ -29,7 +29,7 @@ hp = HumanOthelloPlayer(g).play
 
 
 # network players
-n1 = NNet(g)
+n1 = Network(g)
 if mini_othello:
     n1.load('./pretrained_models/othello/pytorch/','6x100x25_best.pth.tar')
 else:
@@ -41,7 +41,7 @@ n1p = lambda x: np.argmax(mcts1.probabilities(x, temp=0))
 if human_vs_cpu:
     player2 = hp
 else:
-    n2 = NNet(g)
+    n2 = Network(g)
     n2.load('./pretrained_models/othello/pytorch/', '8x8_100checkpoints_best.pth.tar')
     args2 = dotdict({'simulations': 50, 'cpuct': 1.0})
     mcts2 = MCTS(g, n2, args2)

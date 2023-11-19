@@ -1,18 +1,9 @@
-import logging
 import math
-
 import numpy as np
 
 EPS = 1e-8
 
-log = logging.getLogger(__name__)
-
-
 class MCTS():
-    """
-    This class handles the MCTS tree.
-    """
-
     def __init__(self, game, network, config):
         self.game = game
         self.network = network
@@ -26,14 +17,6 @@ class MCTS():
         self.Vs = {}  # stores game.moves for board s
 
     def probabilities(self, canonicalBoard, temp=1):
-        """
-        This function performs simulations simulations of MCTS starting from
-        canonicalBoard.
-
-        Returns:
-            probs: a policy vector where the probability of the ith action is
-                   proportional to Nsa[(s,a)]**(1./temp)
-        """
         for i in range(self.config.simulations):
             self.search(canonicalBoard)
 
@@ -53,25 +36,6 @@ class MCTS():
         return probs
 
     def search(self, canonicalBoard):
-        """
-        This function performs one iteration of MCTS. It is recursively called
-        till a leaf node is found. The action chosen at each node is one that
-        has the maximum upper confidence bound as in the paper.
-
-        Once a leaf node is found, the neural network is called to return an
-        initial policy P and a value v for the state. This value is propagated
-        up the search path. In case the leaf node is a terminal state, the
-        outcome is propagated up the search path. The values of Ns, Nsa, Qsa are
-        updated.
-
-        NOTE: the return values are the negative of the value of the current
-        state. This is done since v is in [-1,1] and if v is the value of a
-        state for the current player, then its value is -v for the other player.
-
-        Returns:
-            v: the negative of the value of the current canonicalBoard
-        """
-
         s = self.game.string(canonicalBoard)
 
         if s not in self.Es:
@@ -92,8 +56,7 @@ class MCTS():
                 # if all valid moves were masked make all valid moves equally probable
 
                 # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
-                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.   
-                log.error("All valid moves were masked, doing a workaround.")
+                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
                 self.Ps[s] = self.Ps[s] + valids
                 self.Ps[s] /= np.sum(self.Ps[s])
 

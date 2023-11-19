@@ -14,7 +14,7 @@ import Arena
 from MCTS import MCTS
 
 from tictactoe.TicTacToeGame import TicTacToeGame
-from tictactoe.keras.NNet import NNetWrapper as TicTacToeKerasNNet
+from tictactoe.network import Network
 from tictactoe.TicTacToePlayers import RandomPlayer
 
 import numpy as np
@@ -22,7 +22,7 @@ from utils import *
 
 if __name__ == '__main__':
     game = TicTacToeGame()
-    neural_net = TicTacToeKerasNNet
+    neural_net = Network
 
     rp = RandomPlayer(game).play
 
