@@ -14,7 +14,6 @@ class Coach():
         self.game = game
         self.network = network
         self.mcts = MCTS(game, network)
-        self.histories = []
 
     def selfPlay(self,tempThreshold = 15):
         examples = []
@@ -28,13 +27,12 @@ class Coach():
             temp = int(step < tempThreshold)
             canonicalBoard = game.getCanonicalForm(board, player)
             probabilities = self.mcts.probabilities(canonicalBoard, temp)
-            inverted = game.invert(canonicalBoard, probabilities)
-            for b, p in inverted:
-                examples.append([b, player, p])
+            rotated = game.rotate(canonicalBoard, probabilities)
+            for board2, probabilities2 in rotated:
+                examples.append([board2, player, probabilities2])
 
             action = np.random.choice(len(probabilities), p=probabilities)
             board, player = game.next(board, player, action)
-
             r = game.done(board, player)
 
             if r != 0:
@@ -47,31 +45,21 @@ class Coach():
         self,
         selfPlayAndLearn = 30,
         selfPlayGames = 3,
-        maxlenOfQueue = 20000,
 
         # selfPlayAndLearn = 1000,
         # selfPlayGames = 100,
-        # maxlenOfQueue = 200000,
 
         compare = 40,
         winRate = 0.6,
         maxHistory = 20,
     ):
         network = self.network
-        histories = []
         game = self.game
         for i in range(selfPlayAndLearn):
-            history = deque([], maxlen=maxlenOfQueue)
+            examples = []
             for _ in tqdm(range(selfPlayGames), desc="Self Play"):
                 self.mcts = MCTS(game, network)
-                history += self.selfPlay()
-            histories.append(history)
-
-            if len(histories) > maxHistory:
-                histories.pop(0)
-            examples = []
-            for e in histories:
-                examples.extend(e)
+                examples.extend(self.selfPlay())
 
             shuffle(examples)
             b4trainNetwork = network.clone()

@@ -11,18 +11,21 @@ class MCTS():
         self.network = network
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited
-        self.Ns = {}  # stores #times board s was visited
-        self.Ps = {}  # stores initial policy (returned by neural net)
+        self.visited = {}  # stores #times board s was visited
+        self.policy = {}  # stores initial policy (returned by neural net)
 
-        self.Es = {}  # stores game.done ended for board s
+        self.done = {}  # stores game.done ended for board s
         self.Vs = {}  # stores game.moves for board s
 
     def probabilities(self, canonicalBoard, temp=1):
+        game = self.game
+        Nsa = self.Nsa
+
         for i in range(self.simulations):
             self.search(canonicalBoard)
 
-        s = self.game.string(canonicalBoard)
-        counts = [self.Nsa[(s, a)] if (s, a) in self.Nsa else 0 for a in range(self.game.actionSize())]
+        s = game.string(canonicalBoard)
+        counts = [Nsa[(s, a)] if (s, a) in Nsa else 0 for a in range(game.actionSize())]
 
         if temp == 0:
             bestAs = np.array(np.argwhere(counts == np.max(counts))).flatten()
@@ -36,65 +39,64 @@ class MCTS():
         probs = [x / counts_sum for x in counts]
         return probs
 
-    def search(self, canonicalBoard):
-        s = self.game.string(canonicalBoard)
+    def search(self, canonicalBoard, cpuct = 1):
+        game = self.game
+        done = self.done
+        policy = self.policy
+        Qsa = self.Qsa
+        Nsa = self.Nsa
+        Vs = self.Vs
+        visited = self.visited
 
-        if s not in self.Es:
-            self.Es[s] = self.game.done(canonicalBoard, 1)
-        if self.Es[s] != 0:
-            # terminal node
-            return -self.Es[s]
+        s = game.string(canonicalBoard)
 
-        if s not in self.Ps:
+        if s not in done:
+            done[s] = game.done(canonicalBoard, 1)
+        if done[s] != 0:
+            return -done[s]
+
+        if s not in policy:
             # leaf node
-            self.Ps[s], v = self.network.predict(canonicalBoard)
-            valids = self.game.moves(canonicalBoard, 1)
-            self.Ps[s] = self.Ps[s] * valids  # masking invalid moves
-            sum_Ps_s = np.sum(self.Ps[s])
+            policy[s], v = self.network.predict(canonicalBoard)
+            valids = game.moves(canonicalBoard, 1)
+            policy[s] = policy[s] * valids
+            sum_Ps_s = np.sum(policy[s])
             if sum_Ps_s > 0:
-                self.Ps[s] /= sum_Ps_s  # renormalize
+                policy[s] /= sum_Ps_s
             else:
-                # if all valid moves were masked make all valid moves equally probable
+                policy[s] = policy[s] + valids
+                policy[s] /= np.sum(policy[s])
 
-                # NB! All valid moves may be masked if either your NNet architecture is insufficient or you've get overfitting or something else.
-                # If you have got dozens or hundreds of these messages you should pay attention to your NNet and/or training process.
-                self.Ps[s] = self.Ps[s] + valids
-                self.Ps[s] /= np.sum(self.Ps[s])
-
-            self.Vs[s] = valids
-            self.Ns[s] = 0
+            Vs[s] = valids
+            visited[s] = 0
             return -v
 
-        valids = self.Vs[s]
+        valids = Vs[s]
         cur_best = -float('inf')
         best_act = -1
 
-        # pick the action with the highest upper confidence bound
-        for a in range(self.game.actionSize()):
+        for a in range(game.actionSize()):
             if valids[a]:
-                if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
-                            1 + self.Nsa[(s, a)])
+                if (s, a) in Qsa:
+                    u = Qsa[(s, a)] + cpuct * policy[s][a] * math.sqrt(visited[s]) / (
+                            1 + Nsa[(s, a)])
                 else:
-                    u = self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
-
+                    u = cpuct * policy[s][a] * math.sqrt(visited[s] + EPS)
                 if u > cur_best:
                     cur_best = u
                     best_act = a
 
         a = best_act
-        next_s, next_player = self.game.next(canonicalBoard, 1, a)
-        next_s = self.game.getCanonicalForm(next_s, next_player)
+        next_s, next_player = game.next(canonicalBoard, 1, a)
+        next_s = game.getCanonicalForm(next_s, next_player)
 
         v = self.search(next_s)
-
-        if (s, a) in self.Qsa:
-            self.Qsa[(s, a)] = (self.Nsa[(s, a)] * self.Qsa[(s, a)] + v) / (self.Nsa[(s, a)] + 1)
-            self.Nsa[(s, a)] += 1
-
+        if (s, a) in Qsa:
+            Qsa[(s, a)] = (Nsa[(s, a)] * Qsa[(s, a)] + v) / (Nsa[(s, a)] + 1)
+            Nsa[(s, a)] += 1
         else:
-            self.Qsa[(s, a)] = v
-            self.Nsa[(s, a)] = 1
+            Qsa[(s, a)] = v
+            Nsa[(s, a)] = 1
 
-        self.Ns[s] += 1
+        visited[s] += 1
         return -v

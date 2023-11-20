@@ -50,7 +50,7 @@ class TicTacToeGame:
     def getCanonicalForm(self, board, player):
         return player*board
 
-    def invert(self, board, probabilities):
+    def rotate(self, board, probabilities):
         assert(len(probabilities) == self.n**2+1)  # 1 for pass
         pi_board = np.reshape(probabilities[:-1], (self.n, self.n))
         l = []
