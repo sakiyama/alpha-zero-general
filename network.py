@@ -6,6 +6,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # 1 = INFO messages are not printed
 # 2 = INFO and WARNING messages are not printed
 # 3 = INFO, WARNING, and ERROR messages are not printed
+from tictactoe import TicTacToe as Game
 
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
@@ -20,10 +21,9 @@ folder = './temp/'
 
 
 class Network:
-    def __init__(self, game,weights = None):
-        self.game = game;
-
-        x, y = game.boardSize()
+    def __init__(self, weights = None):
+        x = Game.x
+        y = Game.y
         input_boards = Input(shape=(x, y))
 
         x_image = Reshape((x, y, 1))(input_boards)
@@ -34,7 +34,7 @@ class Network:
         h_conv4_flat = Flatten()(h_conv4)
         s_fc1 = Dropout(dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(1024)(h_conv4_flat))))
         s_fc2 = Dropout(dropout)(Activation('relu')(BatchNormalization(axis=1)(Dense(512)(s_fc1))))
-        pi = Dense(game.actionSize(), activation='softmax', name='pi')(s_fc2)
+        pi = Dense(Game.size, activation='softmax', name='pi')(s_fc2)
         v = Dense(1, activation='tanh', name='v')(s_fc2)
 
         model = Model(inputs=input_boards, outputs=[pi, v])
@@ -47,13 +47,13 @@ class Network:
         self.model = model
 
     def train(self, examples):
-        input_boards, target_pis, target_vs = list(zip(*examples))
-        input_boards = np.asarray(input_boards)
-        target_pis = np.asarray(target_pis)
-        target_vs = np.asarray(target_vs)
+        boards, policy, value = list(zip(*examples))
+        boards = np.asarray(boards)
+        policy = np.asarray(policy)
+        value = np.asarray(value)
         self.model.fit(
-            x = input_boards,
-            y = [target_pis, target_vs],
+            x = boards,
+            y = [policy, value],
             batch_size = batch_size,
             epochs = epochs
         )
@@ -65,7 +65,7 @@ class Network:
 
     def clone(self) :
         weights = self.model.get_weights()
-        return Network(self.game,weights)
+        return Network(weights)
 
     def save(self, filename):
         filepath = os.path.join(folder, filename)

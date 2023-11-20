@@ -1,96 +1,88 @@
 import math
 import numpy as np
 
-EPS = 1e-8
-
 class MCTS():
-    def __init__(self, game, network):
-        self.game = game
+    def __init__(self, network):
         self.network = network
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited
         self.visited = {}  # stores #times board s was visited
         self.policy = {}  # stores initial policy (returned by neural net)
 
-        self.done = {}  # stores game.done ended for board s
-        self.Vs = {}  # stores game.moves for board s
-
-    def probabilities(self, board, temp=1, simulations=50):
-        game = self.game
+    def probabilities(self, game, temp, simulations=50):
         Nsa = self.Nsa
-
         for i in range(simulations):
-            self.search(board)
+            self.search(game)
 
-        s = game.string(board)
-        counts = [Nsa[(s, a)] if (s, a) in Nsa else 0 for a in range(game.actionSize())]
+        s = game.id
+        counts = [
+            Nsa[(s, a)]
+            if (s, a) in Nsa
+            else 0
+            for a in range(game.size)
+        ]
 
-        if temp == 0:
-            bestAs = np.array(
-                np.argwhere(counts == np.max(counts))
-            ).flatten()
-            bestA = np.random.choice(bestAs)
-            probs = [0] * len(counts)
-            probs[bestA] = 1
-            return probs
+        if temp:
+            counts_sum = float(sum(counts))
+            return [x / counts_sum for x in counts]
 
-        counts = [x ** (1. / temp) for x in counts]
-        counts_sum = float(sum(counts))
-        probs = [x / counts_sum for x in counts]
-        return probs
+        bestAs = np.argwhere(counts == np.max(counts)).flatten()
+        bestA = np.random.choice(bestAs)
+        return [1 if i == bestA else 0 for i in range(len(counts))]
 
-    def search(self, board, cpuct = 1):
-        game = self.game
-        done = self.done
+    def search(self, game, cpuct = 1):
         policy = self.policy
         Qsa = self.Qsa
         Nsa = self.Nsa
-        Vs = self.Vs
         visited = self.visited
 
-        s = game.string(board)
+        s = game.id
 
-        if s not in done:
-            done[s] = game.done(board, 1)
-        if done[s] != 0:
-            return -done[s]
+        if game.done :
+            return game.reward()
 
         if s not in policy:
-            # leaf node
-            policy[s], v = self.network.predict(board)
-            valids = game.moves(board, 1)
-            policy[s] = policy[s] * valids
-            sum_Ps_s = np.sum(policy[s])
-            if sum_Ps_s > 0:
-                policy[s] /= sum_Ps_s
+            p, v = self.network.predict(game.encode())
+            actionNumbers = game.actionNumbers()
+            for index, value in enumerate(p):
+                if index not in actionNumbers :
+                    p[index] = 0
+            sum_policy = np.sum(p)
+
+            if sum_policy == 0:
+                sum_policy = len(actionNumbers)
+                p = [
+                    1 / sum_policy
+                    if index in actionNumbers
+                    else 0
+                    for index, _ in enumerate(p)
+                ]
             else:
-                policy[s] = policy[s] + valids
-                policy[s] /= np.sum(policy[s])
-
-            Vs[s] = valids
+                p /= sum_policy
+            policy[s] = p
             visited[s] = 0
-            return -v
+            return v
 
-        valids = Vs[s]
         cur_best = -float('inf')
         best_act = -1
+        for a in game.actionNumbers():
+            u = 0
+            if (s, a) in Qsa:
+                u = (
+                    Qsa[(s, a)]
+                    + cpuct
+                    * policy[s][a]
+                    * math.sqrt(visited[s])
+                    / (1 + Nsa[(s, a)])
+                )
+            if u > cur_best:
+                cur_best = u
+                best_act = a
 
-        for a in range(game.actionSize()):
-            if valids[a]:
-                if (s, a) in Qsa:
-                    u = Qsa[(s, a)] + cpuct * policy[s][a] * math.sqrt(visited[s]) / (
-                            1 + Nsa[(s, a)])
-                else:
-                    u = cpuct * policy[s][a] * math.sqrt(visited[s] + EPS)
-                if u > cur_best:
-                    cur_best = u
-                    best_act = a
-
+        clone = game.clone()
+        clone.actionFromNumber(best_act)
         a = best_act
-        next_board, next_player = game.next(board, 1, a)
-        next_board = game.getCanonicalForm(next_board, next_player)
-
-        v = self.search(next_board)
+        v = -self.search(clone)
         if (s, a) in Qsa:
             Qsa[(s, a)] = (Nsa[(s, a)] * Qsa[(s, a)] + v) / (Nsa[(s, a)] + 1)
             Nsa[(s, a)] += 1
@@ -99,4 +91,4 @@ class MCTS():
             Nsa[(s, a)] = 1
 
         visited[s] += 1
-        return -v
+        return v

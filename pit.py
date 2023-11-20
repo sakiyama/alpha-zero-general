@@ -12,7 +12,7 @@ hp = HumanOthelloPlayer(g).play
 n1 = Network(g)
 n1.load('./pretrained_models/othello/pytorch/','6x100x25_best.pth.tar')
 mcts = MCTS(g, n1)
-n1p = lambda x: np.argmax(mcts.probabilities(x, 0))
+n1p = lambda x: np.argmax(mcts.probabilities(x, False))
 player2 = hp
 arena = Arena.Arena(n1p, player2, g, display=OthelloGame.display)
 

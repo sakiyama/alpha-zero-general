@@ -1,11 +1,10 @@
 from tqdm import tqdm
 
 class Arena():
-    def __init__(self, player1, player2, game, display=None):
+    def __init__(self, player1, player2, game):
         self.player1 = player1
         self.player2 = player2
         self.game = game
-        self.display = display
     def playGame(self):
         game = self.game
 
