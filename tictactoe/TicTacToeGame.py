@@ -50,9 +50,9 @@ class TicTacToeGame:
     def getCanonicalForm(self, board, player):
         return player*board
 
-    def symmetries(self, board, pi):
-        assert(len(pi) == self.n**2+1)  # 1 for pass
-        pi_board = np.reshape(pi[:-1], (self.n, self.n))
+    def invert(self, board, probabilities):
+        assert(len(probabilities) == self.n**2+1)  # 1 for pass
+        pi_board = np.reshape(probabilities[:-1], (self.n, self.n))
         l = []
 
         for i in range(1, 5):
@@ -62,7 +62,7 @@ class TicTacToeGame:
                 if j:
                     newB = np.fliplr(newB)
                     newPi = np.fliplr(newPi)
-                l += [(newB, list(newPi.ravel()) + [pi[-1]])]
+                l += [(newB, list(newPi.ravel()) + [probabilities[-1]])]
         return l
 
     def string(self, board):

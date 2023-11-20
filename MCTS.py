@@ -4,10 +4,11 @@ import numpy as np
 EPS = 1e-8
 
 class MCTS():
-    def __init__(self, game, network, config):
+    def __init__(self, game, network, simulations=50, cpuct=1):
         self.game = game
+        self.cpuct = cpuct
+        self.simulations = simulations
         self.network = network
-        self.config = config
         self.Qsa = {}  # stores Q values for s,a (as defined in the paper)
         self.Nsa = {}  # stores #times edge s,a was visited
         self.Ns = {}  # stores #times board s was visited
@@ -17,7 +18,7 @@ class MCTS():
         self.Vs = {}  # stores game.moves for board s
 
     def probabilities(self, canonicalBoard, temp=1):
-        for i in range(self.config.simulations):
+        for i in range(self.simulations):
             self.search(canonicalBoard)
 
         s = self.game.string(canonicalBoard)
@@ -72,10 +73,10 @@ class MCTS():
         for a in range(self.game.actionSize()):
             if valids[a]:
                 if (s, a) in self.Qsa:
-                    u = self.Qsa[(s, a)] + self.config.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
+                    u = self.Qsa[(s, a)] + self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s]) / (
                             1 + self.Nsa[(s, a)])
                 else:
-                    u = self.config.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
+                    u = self.cpuct * self.Ps[s][a] * math.sqrt(self.Ns[s] + EPS)  # Q = 0 ?
 
                 if u > cur_best:
                     cur_best = u

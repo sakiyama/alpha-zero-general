@@ -1,6 +1,5 @@
 import os
 import numpy as np
-from utils import *
 import os
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 # 0 = all messages are logged (default behavior)
@@ -21,7 +20,9 @@ folder = './temp/'
 
 
 class Network:
-    def __init__(self, game):
+    def __init__(self, game,weights = None):
+        self.game = game;
+
         x, y = game.boardSize()
         input_boards = Input(shape=(x, y))
 
@@ -36,11 +37,14 @@ class Network:
         pi = Dense(game.actionSize(), activation='softmax', name='pi')(s_fc2)
         v = Dense(1, activation='tanh', name='v')(s_fc2)
 
-        self.model = Model(inputs=input_boards, outputs=[pi, v])
-        self.model.compile(
+        model = Model(inputs=input_boards, outputs=[pi, v])
+        model.compile(
             loss=['categorical_crossentropy','mean_squared_error'],
             optimizer=Adam(lerning_rate)
         )
+        if weights :
+            model.set_weights(weights)
+        self.model = model
 
     def train(self, examples):
         input_boards, target_pis, target_vs = list(zip(*examples))
@@ -58,6 +62,10 @@ class Network:
         board = board[np.newaxis, :, :]
         pi, v = self.model.predict(board, verbose=False)
         return pi[0], v[0]
+
+    def clone(self) :
+        weights = self.model.get_weights()
+        return Network(self.game,weights)
 
     def save(self, filename):
         filepath = os.path.join(folder, filename)
