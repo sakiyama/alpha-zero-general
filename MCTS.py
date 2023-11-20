@@ -9,26 +9,30 @@ class MCTS():
         self.visited = {}  # stores #times board s was visited
         self.policy = {}  # stores initial policy (returned by neural net)
 
-    def probabilities(self, game, temp, simulations=50):
+    def NsaSelect(self,game,simulations=50) :
+        counts = self.NsaCounts(game,simulations)
+        counts_sum = float(sum(counts))
+        probabilities = [x / counts_sum for x in counts]
+        action = np.random.choice(len(probabilities), p=probabilities)
+        return action , probabilities
+
+    def bestAction(self,game,simulations=50) :
+        counts = self.NsaCounts(game,simulations)
+        actions = np.argwhere(counts == np.max(counts)).flatten()
+        return np.random.choice(actions)
+
+    def NsaCounts(self,game,simulations) :
         Nsa = self.Nsa
         for i in range(simulations):
             self.search(game)
 
         s = game.id
-        counts = [
+        return [
             Nsa[(s, a)]
             if (s, a) in Nsa
             else 0
             for a in range(game.size)
         ]
-
-        if temp:
-            counts_sum = float(sum(counts))
-            return [x / counts_sum for x in counts]
-
-        bestAs = np.argwhere(counts == np.max(counts)).flatten()
-        bestA = np.random.choice(bestAs)
-        return [1 if i == bestA else 0 for i in range(len(counts))]
 
     def search(self, game, cpuct = 1):
         policy = self.policy

@@ -3,23 +3,18 @@ from network import Network
 from random import shuffle
 import numpy as np
 from tqdm import tqdm
-from Arena import Arena
 from MCTS import MCTS
 
-game = Game()
 network = Network()
 mcts = MCTS(network)
 
 def selfPlay():
     examples = []
-    step = 0
     game = Game()
 
     while game.done == False:
-        step += 1
-        probabilities = mcts.probabilities(game, step < 15)
+        action, probabilities = mcts.NsaSelect(game)
         examples.append([game.clone(), probabilities])
-        action = np.random.choice(len(probabilities), p=probabilities)
         game.actionFromNumber(action)
 
     reward = game.reward()
@@ -40,8 +35,7 @@ def test(b4,after,count=20, winRate=0.6) :
         start = choice
         while not game.done:
             player = players[choice]
-            probabilities = player.probabilities(game, False)
-            action = np.argmax(probabilities)
+            action = player.bestAction(game)
             game.actionFromNumber(action)
             choice = (choice + 1) % 2
         # game.show()
@@ -56,14 +50,11 @@ def test(b4,after,count=20, winRate=0.6) :
     print("learned model win rate",rate,"draw",draw/count)
     return rate >= winRate
 
-selfPlayAndLearn = 30
-selfPlayGames = 3
+selfPlayAndLearn = 10
+selfPlayGames = 2
 
-# selfPlayAndLearn = 1000,
-# selfPlayGames = 100,
-
-compare = 20
-winRate = 0.6
+# selfPlayAndLearn = 1000
+# selfPlayGames = 100
 
 for i in range(selfPlayAndLearn):
     examples = []
@@ -74,7 +65,7 @@ for i in range(selfPlayAndLearn):
     shuffle(examples)
     network.train(examples)
 
-    if test(b4trainNetwork,network,compare) :
+    if test(b4trainNetwork,network) :
         network.save(filename="checkpoint_" + str(i) + ".h5")
         network.save(filename='best.h5')
     else :
