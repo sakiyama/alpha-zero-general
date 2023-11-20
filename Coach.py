@@ -13,89 +13,78 @@ class Coach():
     def __init__(self, game, network, config):
         self.game = game
         self.network = network
-        self.pnet = self.network.__class__(self.game)
+        self.pnet = self.network.__class__(game)
         self.config = config
-        self.mcts = MCTS(self.game, self.network, self.config)
+        self.mcts = MCTS(game, network, config)
         self.histories = []
-        self.skipFirstSelfPlay = False
 
     def executeEpisode(self):
         examples = []
-        board = self.game.board()
-        self.player = 1
+        player = 1
         episodeStep = 0
+        game = self.game
+        board = game.board()
 
         while True:
             episodeStep += 1
-            canonicalBoard = self.game.getCanonicalForm(board, self.player)
+            canonicalBoard = game.getCanonicalForm(board, player)
             temp = int(episodeStep < self.config.tempThreshold)
 
             probabilities = self.mcts.probabilities(canonicalBoard, temp=temp)
-            symmetries = self.game.symmetries(canonicalBoard, probabilities)
+            symmetries = game.symmetries(canonicalBoard, probabilities)
             for b, p in symmetries:
-                examples.append([b, self.player, p, None])
+                examples.append([b, player, p, None])
 
             action = np.random.choice(len(probabilities), p=probabilities)
-            board, self.player = self.game.next(board, self.player, action)
+            board, player = game.next(board, player, action)
 
-            r = self.game.done(board, self.player)
+            r = game.done(board, player)
 
             if r != 0:
-                return [(x[0], x[2], r * ((-1) ** (x[1] != self.player))) for x in examples]
+                return [(x[0], x[2], r * ((-1) ** (x[1] != player))) for x in examples]
 
-    def learn(self):
-        for i in range(1, self.config.numIters + 1):
-            if not self.skipFirstSelfPlay or i > 1:
-                iterationTrainExamples = deque([], maxlen=self.config.maxlenOfQueue)
+    def learn(
+        self,
+        numIters = 1000,
+        episodes = 100,
+        maxlenOfQueue = 200000,
+        compare = 40,
+    ):
+        network = self.network
+        histories = []
+        pnet = self.pnet
+        game = self.game
 
-                for _ in tqdm(range(self.config.episodes), desc="Self Play"):
-                    self.mcts = MCTS(self.game, self.network, self.config)
-                    iterationTrainExamples += self.executeEpisode()
-                self.histories.append(iterationTrainExamples)
+        for i in range(1, numIters + 1):
+            history = deque([], maxlen=maxlenOfQueue)
+            for _ in tqdm(range(episodes), desc="Self Play"):
+                self.mcts = MCTS(game, network, self.config)
+                history += self.executeEpisode()
+            histories.append(history)
 
-            if len(self.histories) > self.config.maxHistory:
-                self.histories.pop(0)
-            self.saveExamples(i - 1)
+            if len(histories) > self.config.maxHistory:
+                histories.pop(0)
             examples = []
-            for e in self.histories:
+            for e in histories:
                 examples.extend(e)
+
             shuffle(examples)
-            self.network.save(folder=self.config.checkpoint, filename='temp.pth.tar')
-            self.pnet.load(folder=self.config.checkpoint, filename='temp.pth.tar')
-            pmcts = MCTS(self.game, self.pnet, self.config)
+            network.save(filename='temp.h5')
+            pnet.load(filename='temp.h5')
+            pmcts = MCTS(game, pnet, self.config)
 
-            self.network.train(examples)
-            nmcts = MCTS(self.game, self.network, self.config)
+            network.train(examples)
+            nmcts = MCTS(game, network, self.config)
 
-            arena = Arena(lambda x: np.argmax(pmcts.probabilities(x, temp=0)),
-                          lambda x: np.argmax(nmcts.probabilities(x, temp=0)), self.game)
-            pwins, nwins, draws = arena.playGames(self.config.compare)
+            arena = Arena(
+                lambda x: np.argmax(pmcts.probabilities(x, temp=0)),
+                lambda x: np.argmax(nmcts.probabilities(x, temp=0)),
+                game
+            )
+            pwins, nwins, draws = arena.playGames(compare)
 
             if pwins + nwins == 0 or float(nwins) / (pwins + nwins) < self.config.winRate:
-                self.network.load(folder=self.config.checkpoint, filename='temp.pth.tar')
+                network.load(filename='temp.h5')
             else:
-                self.network.save(folder=self.config.checkpoint, filename=self.checkpoint(i))
-                self.network.save(folder=self.config.checkpoint, filename='best.pth.tar')
-
-    def checkpoint(self, iteration):
-        return 'checkpoint_' + str(iteration) + '.pth.tar'
-
-    def saveExamples(self, iteration):
-        folder = self.config.checkpoint
-        if not os.path.exists(folder):
-            os.makedirs(folder)
-        filename = os.path.join(folder, self.checkpoint(iteration) + ".examples")
-        with open(filename, "wb+") as f:
-            Pickler(f).dump(self.histories)
-
-    def loadExamples(self):
-        modelFile = os.path.join(self.config.load_folder_file[0], self.config.load_folder_file[1])
-        examplesFile = modelFile + ".examples"
-        if not os.path.isfile(examplesFile):
-            r = input("Continue? [y|n]")
-            if r != "y":
-                sys.exit()
-        else:
-            with open(examplesFile, "rb") as f:
-                self.histories = Unpickler(f).load()
-            self.skipFirstSelfPlay = True
+                network.save(filename="checkpoint_" + str(iteration) + ".h5")
+                network.save(filename='best.h5')

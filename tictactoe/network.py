@@ -1,6 +1,13 @@
 import os
 import numpy as np
 from utils import *
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+# 0 = all messages are logged (default behavior)
+# 1 = INFO messages are not printed
+# 2 = INFO and WARNING messages are not printed
+# 3 = INFO, WARNING, and ERROR messages are not printed
+
 from tensorflow.keras.models import *
 from tensorflow.keras.layers import *
 from tensorflow.keras.optimizers import *
@@ -10,6 +17,8 @@ dropout = 0.3
 channels = 512
 batch_size = 64
 epochs = 10
+folder = './temp/'
+
 
 class Network:
     def __init__(self, game):
@@ -50,17 +59,14 @@ class Network:
         pi, v = self.model.predict(board, verbose=False)
         return pi[0], v[0]
 
-    def save(self, folder='checkpoint', filename='checkpoint.pth.tar'):
-        filename = filename.split(".")[0] + ".h5"
+    def save(self, filename):
         filepath = os.path.join(folder, filename)
         if not os.path.exists(folder):
             os.mkdir(folder)
 
         self.model.save_weights(filepath)
 
-    def load(self, folder='checkpoint', filename='checkpoint.pth.tar'):
-        filename = filename.split(".")[0] + ".h5"
-
+    def load(self, filename):
         filepath = os.path.join(folder, filename)
         if not os.path.exists(filepath):
             raise("No model in path '{}'".format(filepath))
