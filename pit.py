@@ -3,16 +3,7 @@ from MCTS import MCTS
 from othello.OthelloGame import OthelloGame
 from othello.OthelloPlayers import *
 from othello.pytorch.NNet import Network
-
-
 import numpy as np
-
-"""
-use this script to play any two agents against each other, or play manually with
-any agent.
-"""
-
-human_vs_cpu = True
 
 g = OthelloGame(6)
 rp = RandomPlayer(g).play
