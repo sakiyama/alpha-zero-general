@@ -5,10 +5,8 @@ import numpy as np
 from tqdm import tqdm
 from MCTS import MCTS
 
-network = Network()
-mcts = MCTS(network)
-
-def selfPlay():
+def selfPlay(network):
+    mcts = MCTS(network)
     examples = []
     game = Game()
 
@@ -19,7 +17,11 @@ def selfPlay():
 
     reward = game.reward()
     return [
-        (game2.board,probabilities,reward * ((-1) ** (game2.player != game.player)))
+        (
+            game2.board,
+            probabilities,
+            reward * ((-1) ** (game2.player != game.player))
+        )
         for game2,probabilities in examples
     ]
 
@@ -56,11 +58,11 @@ selfPlayGames = 2
 # selfPlayAndLearn = 1000
 # selfPlayGames = 100
 
+network = Network()
 for i in range(selfPlayAndLearn):
     examples = []
     for _ in tqdm(range(selfPlayGames), desc="Self Play"):
-        mcts = MCTS(network)
-        examples.extend(selfPlay())
+        examples.extend(selfPlay(network))
     b4trainNetwork = network.clone()
     shuffle(examples)
     network.train(examples)

@@ -22,11 +22,11 @@ class MCTS():
         return np.random.choice(actions)
 
     def NsaCounts(self,game,simulations) :
-        Nsa = self.Nsa
         for i in range(simulations):
             self.search(game)
 
         s = game.id
+        Nsa = self.Nsa
         return [
             Nsa[(s, a)]
             if (s, a) in Nsa
@@ -34,59 +34,55 @@ class MCTS():
             for a in range(game.size)
         ]
 
-    def search(self, game, cpuct = 1):
+    def expand(self,game):
+        s = game.id
+
+        p, v = self.network.predict(game.encode())
+        actionNumbers = game.actionNumbers()
+        for index, value in enumerate(p):
+            if index not in actionNumbers :
+                p[index] = 0
+        sum_policy = np.sum(p)
+
+        if sum_policy == 0:
+            sum_policy = len(actionNumbers)
+            p = [
+                1 / sum_policy
+                if index in actionNumbers
+                else 0
+                for index, _ in enumerate(p)
+            ]
+        else:
+            p /= sum_policy
+        self.policy[s] = p
+        self.visited[s] = 0
+        return v[0]
+
+    def puct(self, s, a, cpuct = 1) :
+        Qsa = self.Qsa
+        Nsa = self.Nsa
+        policy = self.policy
+        visited = self.visited
+
+        if (s, a) not in Qsa:
+            return 0
+        return Qsa[(s, a)] + cpuct * policy[s][a] * math.sqrt(visited[s]) / (1 + Nsa[(s, a)])
+
+    def puctSelect(self,game):
         policy = self.policy
         Qsa = self.Qsa
         Nsa = self.Nsa
-        visited = self.visited
 
         s = game.id
 
-        if game.done :
-            return game.reward()
-
-        if s not in policy:
-            p, v = self.network.predict(game.encode())
-            actionNumbers = game.actionNumbers()
-            for index, value in enumerate(p):
-                if index not in actionNumbers :
-                    p[index] = 0
-            sum_policy = np.sum(p)
-
-            if sum_policy == 0:
-                sum_policy = len(actionNumbers)
-                p = [
-                    1 / sum_policy
-                    if index in actionNumbers
-                    else 0
-                    for index, _ in enumerate(p)
-                ]
-            else:
-                p /= sum_policy
-            policy[s] = p
-            visited[s] = 0
-            return v
-
-        cur_best = -float('inf')
-        best_act = -1
-        for a in game.actionNumbers():
-            u = 0
-            if (s, a) in Qsa:
-                u = (
-                    Qsa[(s, a)]
-                    + cpuct
-                    * policy[s][a]
-                    * math.sqrt(visited[s])
-                    / (1 + Nsa[(s, a)])
-                )
-            if u > cur_best:
-                cur_best = u
-                best_act = a
+        actions = game.actionNumbers()
+        pucts = np.array([self.puct(s, a) for a in actions])
+        a = actions[np.argmax(pucts)]
 
         clone = game.clone()
-        clone.actionFromNumber(best_act)
-        a = best_act
+        clone.actionFromNumber(a)
         v = -self.search(clone)
+
         if (s, a) in Qsa:
             Qsa[(s, a)] = (Nsa[(s, a)] * Qsa[(s, a)] + v) / (Nsa[(s, a)] + 1)
             Nsa[(s, a)] += 1
@@ -94,5 +90,14 @@ class MCTS():
             Qsa[(s, a)] = v
             Nsa[(s, a)] = 1
 
-        visited[s] += 1
+        self.visited[s] += 1
         return v
+
+    def search(self, game):
+        if game.done :
+            return game.reward()
+
+        if game.id not in self.policy:
+            return self.expand(game)
+
+        return self.puctSelect(game)
