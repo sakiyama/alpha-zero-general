@@ -1,1 +1,1 @@
-# alpha zero minimum implimantation for learn myself.
+# AlphaZero Minimal Implementation for Self-Learning
